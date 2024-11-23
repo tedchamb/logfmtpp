@@ -93,7 +93,7 @@ jobs:
       run: |
         $basicAuth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(('{0}:{1}' -f 'PAT', "${{ secrets.GITHUB_TOKEN }}")))
         $headers = @{ 'Authorization' = 'Basic ' + $basicAuth }
-        $releaseUri = "https://api.github.com/repos/github/c2c-test-reliability/releases/${{ steps.create_release.outputs.id }}"
+        $releaseUri = "https://api.github.com/repos/tedchamb/logfmtpp/releases/${{ steps.create_release.outputs.id }}"
 
         $release = Invoke-RestMethod -Uri $releaseUri -Headers $headers
         $release.draft = $False
