@@ -5,11 +5,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
 	"github.com/go-logfmt/logfmt"
-	"io"
 )
 
 func main() {
