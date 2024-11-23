@@ -31,10 +31,10 @@ jobs:
     - name: Test
       run: task test
 
-    - name: Upload binary
+    - name: Upload binaries
       uses: actions/upload-artifact@v4
       with:
-        name: logfmtpp.zip
+        name: logfmtpp
         if-no-files-found: error
         path: ./bin
 
@@ -77,8 +77,8 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       with:
         upload_url: ${{ steps.create_release.outputs.upload_url }} # This pulls from the CREATE RELEASE step above, referencing it's ID to get its outputs object, which include a `upload_url`. See this blog post for more info: https://jasonet.co/posts/new-features-of-github-actions/#passing-data-to-future-steps
-        asset_path: ./logfmtpp.zip
-        asset_name: logfmtpp.zip
+        asset_path: ./logfmtpp
+        asset_name: logfmtpp
         asset_content_type: application/zip
 
     - name: Publish release
