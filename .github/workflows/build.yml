@@ -17,10 +17,85 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v5
       with:
-        go-version: '1.22'
+        go-version-file: ./go.mod
+        cache-dependency-path: ./go.sum
+
+    - name: Install go-task
+      uses: arduino/setup-task@v2
+      with:
+        version: 3.x
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Build
-      run: go build -v ./...
+      run: task build
 
     - name: Test
-      run: go test -v ./...
+      run: task test
+
+    - name: Upload binaries
+      uses: actions/upload-artifact@v4
+      with:
+        name: logfmtpp
+        if-no-files-found: error
+        path: ./bin
+
+    - name: Create zip of build
+      shell: pwsh
+      run: |
+        Compress-Archive -Path './bin/*' -DestinationPath 'logfmtpp.zip'
+
+    - name: Determine version
+      shell: pwsh
+      run: |
+        $basicAuth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(('{0}:{1}' -f 'PAT', "${{ secrets.GITHUB_TOKEN }}")))
+        $headers = @{ 'Authorization' = 'Basic ' + $basicAuth }
+
+        $latest = Invoke-RestMethod -Uri 'https://api.github.com/repos/tedchamb/logfmtpp/releases/latest' -Headers $headers
+
+        $versionString = $latest.tag_name
+        if ($versionString.StartsWith('v')) {
+            $versionString = $versionString.SubString(1)
+        }
+
+        $version = [version]$versionString
+        $nextVersionString = "v$($version.Major).$($version.Minor).$($version.Build + 1)"
+
+        Write-Host "Next version is $nextVersionString"
+        echo "next_version=$nextVersionString" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+
+    - name: Create draft release
+      id: create_release
+      if: ${{ github.ref == 'refs/heads/main' || endsWith(github.head_ref, '/testrelease') }}
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        tag_name: ${{ env.next_version }}
+        release_name: ${{ env.next_version }}
+        draft: true # keep as draft until we upload assets
+        prerelease: false
+
+    - name: Upload logfmtpp.zip to release
+      id: upload-release-asset
+      if: ${{ github.ref == 'refs/heads/main' || endsWith(github.head_ref, '/testrelease') }}
+      uses: actions/upload-release-asset@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        upload_url: ${{ steps.create_release.outputs.upload_url }}
+        asset_path: ./logfmtpp.zip
+        asset_name: logfmtpp.zip
+        asset_content_type: application/zip
+
+    - name: Publish release
+      if: ${{ github.ref == 'refs/heads/main' }}
+      shell: pwsh
+      run: |
+        $basicAuth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(('{0}:{1}' -f 'PAT', "${{ secrets.GITHUB_TOKEN }}")))
+        $headers = @{ 'Authorization' = 'Basic ' + $basicAuth }
+        $releaseUri = "https://api.github.com/repos/github/c2c-test-reliability/releases/${{ steps.create_release.outputs.id }}"
+
+        $release = Invoke-RestMethod -Uri $releaseUri -Headers $headers
+        $release.draft = $False
+
+        Invoke-RestMethod -Method 'Post' -Uri $releaseUri -Headers $headers -Body (ConvertTo-Json $release)

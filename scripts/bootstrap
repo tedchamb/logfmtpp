@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+set -e
+
+if ! task --version > /dev/null 2>&1; then
+   if [[ "$(uname)" == "Linux" ]]; then
+      echo "deb [trusted=yes] https://apt.fury.io/go-task/ /" | sudo tee /etc/apt/sources.list.d/go-task.list
+      sudo apt update
+      sudo apt install task
+    elif [[ "$(uname)" == "Darwin" ]]; then
+      brew install go-task/tap/go-task
+    fi
+fi
