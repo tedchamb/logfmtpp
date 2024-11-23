@@ -1,0 +1,15 @@
+version: '3'
+
+tasks:
+  build:
+    desc: Build
+    cmds:
+      - go build -o bin/logfmtpp ./cmd/logfmtpp
+    sources:
+      - '**/*.go'
+    generates:
+      - bin/logfmtpp
+  test:
+    desc: Run tests
+    cmds:
+      - go test ./...
