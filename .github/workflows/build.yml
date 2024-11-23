@@ -31,17 +31,12 @@ jobs:
     - name: Test
       run: task test
 
-    - name: Create zip of build
-      shell: pwsh
-      run: |
-        Compress-Archive -Path './bin/*' -DestinationPath 'logfmtpp.zip'
-
     - name: Upload binary
       uses: actions/upload-artifact@v4
       with:
         name: logfmtpp.zip
         if-no-files-found: error
-        path: ./bin/logfmtpp.zip
+        path: ./bin
 
     - name: Determine version
       shell: pwsh
