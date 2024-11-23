@@ -38,6 +38,11 @@ jobs:
         if-no-files-found: error
         path: ./bin
 
+    - name: Create zip of build
+      shell: pwsh
+      run: |
+        Compress-Archive -Path './bin/*' -DestinationPath 'logfmtpp.zip'
+
     - name: Determine version
       shell: pwsh
       run: |
