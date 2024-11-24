@@ -5,11 +5,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"strings"
 
 	"github.com/go-logfmt/logfmt"
+	"io"
 )
 
 func main() {
@@ -59,10 +59,7 @@ func main() {
 				fmt.Println(input)
 			} else {
 				if err := formatJson(bytes.NewReader(formattedBytes), os.Stdout, true); err != nil {
-					_, err := fmt.Fprintf(os.Stderr, "Error: %v\n", err)
-					if err != nil {
-						return
-					}
+					fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 				}
 			}
 		} else {
@@ -94,16 +91,8 @@ var comma = colorBrace + "," + colorReset
 
 func formatJson(reader io.Reader, writer io.Writer, expandStringEncodedJsonValues bool) error {
 	err := formatJsonFromDecoder(json.NewDecoder(reader), writer, 0, expandStringEncodedJsonValues)
-	if err != nil {
-		return err
-	}
-
-	_, err = fmt.Fprintln(writer)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	fmt.Fprintln(writer)
+	return err
 }
 
 // ColorizeJSON processes JSON input and writes colorized output to the writer
@@ -125,21 +114,12 @@ func formatJsonFromDecoder(decoder *json.Decoder, writer io.Writer, indentDepth 
 		case json.Delim: // Braces or brackets
 			if v == '{' || token == '[' {
 				// open
-				_, err = fmt.Fprintf(writer, "%s%s%s", colorBrace, v, colorReset)
-				if err != nil {
-					return err
-				}
-				err = formatJsonFromDecoder(decoder, writer, indentDepth+1, expandStringEncodedJsonValues)
-				if err != nil {
-					return err
-				}
+				fmt.Fprintf(writer, "%s%s%s", colorBrace, v, colorReset)
+				formatJsonFromDecoder(decoder, writer, indentDepth+1, expandStringEncodedJsonValues)
 				lastTokenKind = kindOther
 			} else {
 				// close
-				_, err = fmt.Fprintf(writer, "\n%s%s%s%s", strings.Repeat(indent, indentDepth-1), colorBrace, v, colorReset)
-				if err != nil {
-					return err
-				}
+				fmt.Fprintf(writer, "\n%s%s%s%s", strings.Repeat(indent, indentDepth-1), colorBrace, v, colorReset)
 				lastTokenKind = kindValue
 				return nil
 			}
@@ -152,66 +132,39 @@ func formatJsonFromDecoder(decoder *json.Decoder, writer io.Writer, indentDepth 
 					var bufferWriter io.Writer = &buffer
 					err = formatJsonFromDecoder(json.NewDecoder(strings.NewReader(v)), bufferWriter, indentDepth, expandStringEncodedJsonValues)
 					if err == nil {
-						_, err = io.Copy(writer, &buffer)
-						if err != nil {
-							return err
-						}
+						io.Copy(writer, &buffer)
 						expandWritten = true
 					}
 				}
 
 				if !expandWritten {
 					escapedValue, _ := EscapeJSON(v)
-					_, err = fmt.Fprintf(writer, "%s%s%s%s%s", quote, colorStr, escapedValue, colorReset, quote)
-					if err != nil {
-						return err
-					}
+					fmt.Fprintf(writer, "%s%s%s%s%s", quote, colorStr, escapedValue, colorReset, quote)
 				}
 
 				lastTokenKind = kindValue
 			} else {
 				// Key
 				if lastTokenKind == kindValue {
-					_, err = fmt.Fprintf(writer, comma)
-					if err != nil {
-						return err
-					}
+					fmt.Fprintf(writer, comma)
 				}
-				_, err = fmt.Fprintf(writer, "\n%s%s%s%s%s%s%s ", strings.Repeat(indent, indentDepth), quote, colorKey, v, colorReset, quote, colon)
-				if err != nil {
-					return err
-				}
+				fmt.Fprintf(writer, "\n%s%s%s%s%s%s%s ", strings.Repeat(indent, indentDepth), quote, colorKey, v, colorReset, quote, colon)
 				lastTokenKind = kindKey
 			}
 		case json.Number: // Numbers
-			_, err = fmt.Fprintf(writer, "%s%v%s", colorNum, v, colorReset)
-			if err != nil {
-				return err
-			}
+			fmt.Fprintf(writer, "%s%v%s", colorNum, v, colorReset)
 			lastTokenKind = kindValue
 		case float64: // Numbers
-			_, err = fmt.Fprintf(writer, "%s%v%s", colorNum, v, colorReset)
-			if err != nil {
-				return err
-			}
+			fmt.Fprintf(writer, "%s%v%s", colorNum, v, colorReset)
 			lastTokenKind = kindValue
 		case bool: // Booleans
-			_, err = fmt.Fprintf(writer, "%s%t%s", colorBool, v, colorReset)
-			if err != nil {
-				return err
-			}
+			fmt.Fprintf(writer, "%s%t%s", colorBool, v, colorReset)
 			lastTokenKind = kindValue
 		case nil: // Null
-			_, err = fmt.Fprintf(writer, "%snil%s", colorNull, colorReset)
-			if err != nil {
-				return err
-			}
+			fmt.Fprintf(writer, "%snil%s", colorNull, colorReset)
 			lastTokenKind = kindOther
 		default:
-			_, err = fmt.Fprintf(writer, ">>>%v<<<", v)
-			if err != nil {
-				return err
-			}
+			fmt.Fprintf(writer, ">>>%v<<<", v)
 			lastTokenKind = kindOther
 		}
 	}
